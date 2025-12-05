@@ -11,14 +11,13 @@ struct Conta {
     float saldo;
 };
 
-void criarConta();
-void consultarExtrato();
-void realizarDeposito();
-void realizarSaque();
-void realizarTransferencia();
-void listarContas();
-int buscarConta(int numero, struct Conta *c, long *posicao);
-void menu();
+int criarConta();
+int consultarExtrato();
+int realizarDeposito();
+int realizarSaque();
+int realizarTransferencia();
+int listarContas();
+int menu();
 
 int main() {
     FILE *fp = fopen(ARQUIVO_DADOS, "ab");
@@ -28,7 +27,7 @@ int main() {
     return 0;
 }
 
-void menu() {
+int menu() {
     int opcao;
     do {
         printf("\n=== SISTEMA BANCARIO ===\n");
@@ -44,38 +43,33 @@ void menu() {
         getchar();
 
         switch(opcao) {
-            case 1: criarConta(); 
-            break;
-            case 2: consultarExtrato(); 
-            break;
-            case 3: realizarDeposito();
-            break;
-            case 4: realizarSaque(); 
-            break;
-            case 5: realizarTransferencia(); 
-            break;
-            case 6: listarContas(); 
-            break;
-            case 7: printf("Encerrando o sistema...\n"); 
-            break;
+            case 1: criarConta(); break;
+            case 2: consultarExtrato(); break;
+            case 3: realizarDeposito(); break;
+            case 4: realizarSaque(); break;
+            case 5: realizarTransferencia(); break;
+            case 6: listarContas(); break;
+            case 7: printf("Encerrando o sistema...\n"); break;
             default: printf("Opcao invalida!\n");
         }
     } while (opcao != 7);
+    return 0;
 }
 
-void criarConta() {
+int criarConta() {
     struct Conta novaConta;
     FILE *fp = fopen(ARQUIVO_DADOS, "rb+");
+    long tam;
+    int totalContas;
     
-    if (fp == NULL) 
-    {
+    if (fp == NULL) {
         printf("Erro ao abrir arquivo.\n");
-        return;
+        return 0;
     }
 
     fseek(fp, 0, SEEK_END);
-    long tam = ftell(fp);
-    int totalContas = tam / sizeof(struct Conta);
+    tam = ftell(fp);
+    totalContas = tam / sizeof(struct Conta);
     novaConta.numero = totalContas + 1;
 
     printf("Digite o nome do titular: ");
@@ -88,109 +82,114 @@ void criarConta() {
     printf("Conta criada com sucesso! Numero da conta: %d\n", novaConta.numero);
     
     fclose(fp);
+    return 1;
 }
 
-int buscarConta(int numero, struct Conta *c, long *posicao) {
+int consultarExtrato() {
+    int num, encontrado = 0;
+    struct Conta c;
     FILE *fp = fopen(ARQUIVO_DADOS, "rb");
+
     if (fp == NULL) return 0;
 
-    struct Conta temp;
-    while(fread(&temp, sizeof(struct Conta), 1, fp)) {
-        if(temp.numero == numero) {
-            *c = temp;
-            *posicao = ftell(fp) - sizeof(struct Conta);
-            fclose(fp);
-            return 1;
+    printf("Digite o numero da conta: ");
+    scanf("%d", &num);
+
+    while(fread(&c, sizeof(struct Conta), 1, fp)) {
+        if(c.numero == num) {
+            printf("\n--- EXTRATO ---\n");
+            printf("Conta: %d\n", c.numero);
+            printf("Titular: %s\n", c.titular);
+            printf("Saldo: R$ %.2f\n", c.saldo);
+            encontrado = 1;
+            break;
         }
     }
+    
+    if(!encontrado) printf("Conta nao encontrada.\n");
+    
     fclose(fp);
-    return 0;
+    return encontrado;
 }
 
-void consultarExtrato() {
-    int num;
-    struct Conta c;
-    long pos;
-
-    printf("Digite o numero da conta: ");
-    scanf("%d", &num);
-
-    if (buscarConta(num, &c, &pos)) {
-        printf("\n--- EXTRATO ---\n");
-        printf("Conta: %d\n", c.numero);
-        printf("Titular: %s\n", c.titular);
-        printf("Saldo: R$ %.2f\n", c.saldo);
-    } else {
-        printf("Conta nao encontrada.\n");
-    }
-}
-
-void realizarDeposito() {
-    int num;
+int realizarDeposito() {
+    int num, encontrado = 0;
     float valor;
     struct Conta c;
-    long pos;
+    FILE *fp = fopen(ARQUIVO_DADOS, "rb+");
+
+    if (fp == NULL) return 0;
 
     printf("Digite o numero da conta: ");
     scanf("%d", &num);
 
-    if (buscarConta(num, &c, &pos)) 
-    {
-        printf("Valor a depositar: ");
-        scanf("%f", &valor);
+    while(fread(&c, sizeof(struct Conta), 1, fp)) {
+        if(c.numero == num) {
+            printf("Valor a depositar: ");
+            scanf("%f", &valor);
 
-        c.saldo += valor;
+            c.saldo += valor;
 
-        FILE *fp = fopen(ARQUIVO_DADOS, "rb+");
-        fseek(fp, pos, SEEK_SET);
-        fwrite(&c, sizeof(struct Conta), 1, fp);
-        fclose(fp);
-        
-        printf("Deposito realizado! Novo saldo: R$ %.2f\n", c.saldo);
-    } else 
-    {
-        printf("Conta nao encontrada.\n");
-    }
-}
-
-void realizarSaque() {
-    int num;
-    float valor;
-    struct Conta c;
-    long pos;
-
-    printf("Digite o numero da conta: ");
-    scanf("%d", &num);
-
-    if (buscarConta(num, &c, &pos)) 
-    {
-        printf("Valor a sacar: ");
-        scanf("%f", &valor);
-
-        if (c.saldo >= valor) {
-            c.saldo -= valor;
-            
-            FILE *fp = fopen(ARQUIVO_DADOS, "rb+");
-            fseek(fp, pos, SEEK_SET);
+            fseek(fp, -((long)sizeof(struct Conta)), SEEK_CUR);
             fwrite(&c, sizeof(struct Conta), 1, fp);
-            fclose(fp);
-
-            printf("Saque realizado! Novo saldo: R$ %.2f\n", c.saldo);
-        } else {
-            printf("Saldo insuficiente.\n");
+            
+            printf("Deposito realizado! Novo saldo: R$ %.2f\n", c.saldo);
+            encontrado = 1;
+            break;
         }
-    } 
-    else 
-    {
-        printf("Conta nao encontrada.\n");
     }
+
+    if(!encontrado) printf("Conta nao encontrada.\n");
+
+    fclose(fp);
+    return encontrado;
 }
 
-void realizarTransferencia() {
+int realizarSaque() {
+    int num, encontrado = 0;
+    float valor;
+    struct Conta c;
+    FILE *fp = fopen(ARQUIVO_DADOS, "rb+");
+
+    if (fp == NULL) return 0;
+
+    printf("Digite o numero da conta: ");
+    scanf("%d", &num);
+
+    while(fread(&c, sizeof(struct Conta), 1, fp)) {
+        if(c.numero == num) {
+            printf("Valor a sacar: ");
+            scanf("%f", &valor);
+
+            if (c.saldo >= valor) {
+                c.saldo -= valor;
+                
+                fseek(fp, -((long)sizeof(struct Conta)), SEEK_CUR);
+                fwrite(&c, sizeof(struct Conta), 1, fp);
+
+                printf("Saque realizado! Novo saldo: R$ %.2f\n", c.saldo);
+            } else {
+                printf("Saldo insuficiente.\n");
+            }
+            encontrado = 1;
+            break;
+        }
+    }
+
+    if(!encontrado) printf("Conta nao encontrada.\n");
+
+    fclose(fp);
+    return encontrado;
+}
+
+int realizarTransferencia() {
     int numOrigem, numDestino;
     float valor;
-    struct Conta cOrigem, cDestino;
-    long posOrigem, posDestino;
+    struct Conta cOrigem, cDestino, temp;
+    long posOrigem = -1, posDestino = -1;
+    FILE *fp = fopen(ARQUIVO_DADOS, "rb+");
+
+    if (fp == NULL) return 0;
 
     printf("Conta de Origem: ");
     scanf("%d", &numOrigem);
@@ -199,47 +198,53 @@ void realizarTransferencia() {
     printf("Valor da transferencia: ");
     scanf("%f", &valor);
 
-    if (buscarConta(numOrigem, &cOrigem, &posOrigem) && buscarConta(numDestino, &cDestino, &posDestino)) {
-        
-        if (cOrigem.saldo >= valor) 
-        {
+    rewind(fp);
+    while(fread(&temp, sizeof(struct Conta), 1, fp)) {
+        if(temp.numero == numOrigem) {
+            cOrigem = temp;
+            posOrigem = ftell(fp) - sizeof(struct Conta);
+        }
+        if(temp.numero == numDestino) {
+            cDestino = temp;
+            posDestino = ftell(fp) - sizeof(struct Conta);
+        }
+    }
+
+    if (posOrigem != -1 && posDestino != -1) {
+        if (cOrigem.saldo >= valor) {
             cOrigem.saldo -= valor;
             cDestino.saldo += valor;
 
-            FILE *fp = fopen(ARQUIVO_DADOS, "rb+");
-            
             fseek(fp, posOrigem, SEEK_SET);
             fwrite(&cOrigem, sizeof(struct Conta), 1, fp);
             
             fseek(fp, posDestino, SEEK_SET);
             fwrite(&cDestino, sizeof(struct Conta), 1, fp);
             
-            fclose(fp);
-            
             printf("Transferencia realizada com sucesso!\n");
-        } else 
-        {
+        } else {
             printf("Saldo insuficiente na conta de origem.\n");
         }
-    } else 
-    {
+    } else {
         printf("Uma ou ambas as contas nao foram encontradas.\n");
     }
+
+    fclose(fp);
+    return 1;
 }
 
-void listarContas() {
+int listarContas() {
     char senha[20];
+    struct Conta c;
+    FILE *fp = fopen(ARQUIVO_DADOS, "rb");
+
     printf("Digite a senha de administrador: ");
     scanf("%s", senha);
 
-    if (strcmp(senha, SENHA_ADMIN) == 0) 
-    {
-        FILE *fp = fopen(ARQUIVO_DADOS, "rb");
-        struct Conta c;
-        
+    if (strcmp(senha, SENHA_ADMIN) == 0) {
         if (fp == NULL) {
             printf("Nenhuma conta cadastrada.\n");
-            return;
+            return 0;
         }
 
         printf("\n--- RELATORIO GERAL ---\n");
@@ -247,8 +252,8 @@ void listarContas() {
             printf("Conta: %d | Titular: %-20s | Saldo: R$ %.2f\n", c.numero, c.titular, c.saldo);
         }
         fclose(fp);
-    } else 
-    {
+    } else {
         printf("Senha incorreta!\n");
     }
+    return 1;
 }
