@@ -59,7 +59,7 @@ int menu() {
 int criarConta() {
     struct Conta novaConta;
     FILE *fp = fopen(ARQUIVO_DADOS, "rb+");
-    long tam;
+    int tam;          
     int totalContas;
     
     if (fp == NULL) {
@@ -68,7 +68,7 @@ int criarConta() {
     }
 
     fseek(fp, 0, SEEK_END);
-    tam = ftell(fp);
+    tam = (int)ftell(fp); 
     totalContas = tam / sizeof(struct Conta);
     novaConta.numero = totalContas + 1;
 
@@ -130,7 +130,8 @@ int realizarDeposito() {
 
             c.saldo += valor;
 
-            fseek(fp, -((long)sizeof(struct Conta)), SEEK_CUR);
+            
+            fseek(fp, -((int)sizeof(struct Conta)), SEEK_CUR);
             fwrite(&c, sizeof(struct Conta), 1, fp);
             
             printf("Deposito realizado! Novo saldo: R$ %.2f\n", c.saldo);
@@ -164,7 +165,7 @@ int realizarSaque() {
             if (c.saldo >= valor) {
                 c.saldo -= valor;
                 
-                fseek(fp, -((long)sizeof(struct Conta)), SEEK_CUR);
+                fseek(fp, -((int)sizeof(struct Conta)), SEEK_CUR);
                 fwrite(&c, sizeof(struct Conta), 1, fp);
 
                 printf("Saque realizado! Novo saldo: R$ %.2f\n", c.saldo);
@@ -186,7 +187,7 @@ int realizarTransferencia() {
     int numOrigem, numDestino;
     float valor;
     struct Conta cOrigem, cDestino, temp;
-    long posOrigem = -1, posDestino = -1;
+    int posOrigem = -1, posDestino = -1; 
     FILE *fp = fopen(ARQUIVO_DADOS, "rb+");
 
     if (fp == NULL) return 0;
@@ -202,11 +203,11 @@ int realizarTransferencia() {
     while(fread(&temp, sizeof(struct Conta), 1, fp)) {
         if(temp.numero == numOrigem) {
             cOrigem = temp;
-            posOrigem = ftell(fp) - sizeof(struct Conta);
+            posOrigem = (int)ftell(fp) - sizeof(struct Conta); 
         }
         if(temp.numero == numDestino) {
             cDestino = temp;
-            posDestino = ftell(fp) - sizeof(struct Conta);
+            posDestino = (int)ftell(fp) - sizeof(struct Conta); 
         }
     }
 
